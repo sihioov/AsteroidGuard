@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "asteroidguard-core",
+    "asteroidguard-ffi",
+    "asteroidguard-cli"
+]
+resolver = "2"
