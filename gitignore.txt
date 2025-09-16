@@ -1,0 +1,42 @@
+# -----------------------
+# Rust
+# -----------------------
+/**/target/
+/**/*.rs.bk
+
+# Cargo lock
+Cargo.lock
+
+# -----------------------
+# Android / Gradle
+# -----------------------
+/**/.gradle/
+/**/build/
+/**/.idea/
+/**/.cxx/
+/**/local.properties
+gradle-app.setting
+
+# Android Studio
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Keystore files
+/**/*.jks
+/**/*.keystore
+/**/*.pem
+/**/*.p12
+
+# -----------------------
+# OS / Editor
+# -----------------------
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# VSCode
+.vscode/
