@@ -4,7 +4,7 @@ mod env;
 pub use types::{RiskLevel, RiskReport, SecurityConfig};
 use env::{DefaultEnv, Env};
 
-pub fn check_all(cfg: &SecurityConfig) -> RiskReport {
+pub fn check_all(_cfg: &SecurityConfig) -> RiskReport {
 
     RiskReport::default()
 }
@@ -14,7 +14,7 @@ pub fn is_rooted() -> bool {
 }
 
 pub fn is_debugging() -> bool {
-    false
+    is_debugging_with(&DefaultEnv {})
 }
 
 pub fn is_emulator() -> bool {
@@ -71,6 +71,47 @@ fn is_rooted_with<E: Env>(env: &E) -> bool {
     false
 }
 
+fn is_debugging_with<E: Env>(env: &E) -> bool {
+    // 안드로이드 시스템 속성 확인
+    if let Some(v) = env.getprop("ro.debuggable") {
+        if v == "1" {
+            return true;
+        }
+    }
+    if let Some(v) = env.getprop("ro.secure") {
+        if v == "0" {
+            return true;
+        }
+    }
+
+    // 리눅스/안드로이드에서 TracerPid 확인 (디버거가 붙어 있으면 > 0)
+    if let Some(tracer_pid) = tracer_pid_from_proc_status() {
+        if tracer_pid > 0 {
+            return true;
+        }
+    }
+
+    false
+}
+
+#[cfg(unix)]
+fn tracer_pid_from_proc_status() -> Option<u32> {
+    use std::fs;
+    let content = fs::read_to_string("/proc/self/status").ok()?;
+    for line in content.lines() {
+        if let Some(rest) = line.strip_prefix("TracerPid:") {
+            let pid_str = rest.trim();
+            if let Ok(pid) = pid_str.parse::<u32>() {
+                return Some(pid);
+            }
+        }
+    }
+    None
+}
+
+#[cfg(not(unix))]
+fn tracer_pid_from_proc_status() -> Option<u32> { None }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -119,5 +160,19 @@ mod tests {
     fn not_rooted_default() {
         let f = FakeEnv { files: Default::default(), props: Default::default(), bins: Default::default() };
         assert!(!is_rooted_with(&f));
+    }
+
+    #[test]
+    fn debugging_by_ro_debuggable() {
+        let mut f = FakeEnv { files: Default::default(), props: Default::default(), bins: Default::default() };
+        f.props.insert("ro.debuggable".into(), "1".into());
+        assert!(is_debugging_with(&f));
+    }
+
+    #[test]
+    fn debugging_by_ro_secure_zero() {
+        let mut f = FakeEnv { files: Default::default(), props: Default::default(), bins: Default::default() };
+        f.props.insert("ro.secure".into(), "0".into());
+        assert!(is_debugging_with(&f));
     }
 }
